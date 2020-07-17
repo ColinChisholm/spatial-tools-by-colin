@@ -1,0 +1,55 @@
+---
+title: "Recce of XYZ"
+author: "C. Chisholm"
+date: "6/5/2020" ## Initial date of script
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warnings = FALSE, message = FALSE)
+
+library(tidyverse)
+library(sf)
+library(knitr)
+library(kableExtra)
+```
+
+
+### Preable
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras consequat semper rhoncus. In ut sem gravida turpis ultricies ultrices in a lacus. Suspendisse massa elit, porttitor at tincidunt ac, faucibus sit amet ante. Pellentesque consequat tortor tortor, eget tempus mi consequat eget. Phasellus et libero sed quam sagittis venenatis nec ac neque. Etiam vel rutrum quam. Donec sit amet condimentum lectus, a sodales massa. Pellentesque accumsan urna lacus, sit amet consequat mi cursus at.
+
+```{r, echo=FALSE}
+## provide shapefile and gpx file exports from Avenza
+
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+shp <- st_read("GPS data/Layer.shp", quiet = TRUE)
+
+# st_layers("./37_WBear_aerial_pem/37_WBear_aerial_pem.gpx")
+gpx <- st_read("./GPS data/Blk39_recce_pem.gpx",
+                 layer = "waypoints",
+                 quiet = TRUE) %>%
+  as_tibble() %>% select(time)
+
+recon <- bind_cols(shp, gpx) %>%
+  arrange(time) %>%
+  mutate(id = row_number()) %>%
+  dplyr::select(id, name, time, Photos, desc)
+
+df <- recon %>% as_tibble() %>% dplyr::select(id, name, Photos, desc)
+
+recon <- st_transform(recon, 3157)
+
+
+# df$desc <- gsub("\n", "<br>", df$desc)
+# df
+
+
+kable(df) %>% kable_styling()
+```
+
+
+```{r, echo = FALSE, eval=FALSE}
+st_write(recon, "./39_0604_recon.gpkg", layer = "recon", delete_dsn = TRUE, quiet = TRUE)
+
+```
