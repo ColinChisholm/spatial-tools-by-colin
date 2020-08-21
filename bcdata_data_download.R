@@ -11,7 +11,7 @@
 ##    - load and area of interest polygon
 ## 3. Query BCdata for layers that you want -- numerous default layers have been set up.
 ## 4. Collect and Export desired data files.  
-##    I have set this up as a function `collect_all()` 
+##    I have set this up as a function `collect_all()`  and added `collect_custom()`
 ##    All layers, with data are saved in geojson format (other formats failed to save.)
 ## Appendix: Exploring data
 
@@ -31,11 +31,11 @@ library(bcdata)  ## tools for accessing bcdata:  http://data.gov.bc.ca
 
 ## 1. Set Parameters -------------
 
-setwd("d:/GIS/ALRF/Projects/2020/tmp/") 
+setwd("e:/workspace/2020/SGreen_NREM303/") 
 outDir <- "bcdata/"         ## subfolder to save data to 
 FileName <- "Basemap"       ## Filename prefix for basemap layers
 ForestLayers   <- "Forest"  ## Filename prefix for forestry/tenure layers 
-
+CustomName <- "Other"            ## Filename prefix for custom layers set
 ## make ourDir if needed 
 if (!dir.exists(outDir)) {dir.create(outDir)}
 
@@ -58,6 +58,8 @@ aoi <- draw() %>% st_transform(., 3005) ## BC Albers 3005; convert to UTM 3157
 ## * Or load aoi -------------
 
 # aoi <- st_read("LT_researchforest/proposed_researchforest.shp") %>% st_transform(., 3005)
+# aoi <- st_read("d:/GIS/ALRF/_MostRequested_/ALRF Boundary/ALRF_Boundary_BGC.gpkg") %>% 
+  # st_transform(., 3005)
 # # st_is_valid(aoi)
 # 
 # ## sometimes shapefiles provided are invalid.  -- this attempts to repair them
@@ -80,8 +82,8 @@ mapview(aoi)
 
 ## 3. Query BC data -----------------
 ## sample code for how to search the bcdata for layers
-# pot <- bcdc_search("Park", n = 500)
-# names(pot)# %>% sort()
+pot <- bcdc_search("Forest Service Roads", n = 500)
+names(pot)# %>% sort()
 
 
 ## * lists of data to get ----------
@@ -148,7 +150,10 @@ forest_dict <- c(
               "Ungulate-Winter-Range")
 
 
+custom <- c("WHSE_FOREST_TENURE.FTEN_ROAD_SECTION_LINES_SVW") ## Forest Tenure Road Section Lines
+##Note: this road layer requires an API key for download ... get via databc portal instead.            
 
+custom_dict <- c("ForestRoadsSections")
 
 
 ### 4. Collect & Save all the data ------------------
@@ -203,6 +208,31 @@ collect_all <- function(aoi = aoi) { ## wrapped the collection steps in a functi
   }
 }
 collect_all(aoi = aoi)
+
+
+collect_custom <- function(aoi) {
+  for (i in 1:length(custom)) {
+    # for (i in 11:14) {
+    
+    # i <- 11
+    print(custom[i])
+    
+    ## collect the data
+    dat <- bcdc_query_geodata(custom[i], crs = 3005) %>%
+      bcdata::filter(INTERSECTS(aoi)) %>%
+      collect() %>%
+      {if(nrow(.) > 0) st_intersection(., aoi) else .}
+    
+    if (nrow(dat) == 0) { 
+      print(paste0("No ", custom_dict[i], " features in the area of interest."))} else{
+        st_write(dat,
+                 dsn = paste0(outDir, CustomName, "_", custom_dict[i], ".geojson"),
+                 layer = custom_dict[i], 
+                 delete_dsn = TRUE)
+      }
+  }
+}
+collect_custom(aoi = aoi)
 
 
 ### Appendix: Exploring data -------------
