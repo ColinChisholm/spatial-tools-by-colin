@@ -31,7 +31,7 @@ library(bcdata)  ## tools for accessing bcdata:  http://data.gov.bc.ca
 
 ## 1. Set Parameters -------------
 
-setwd("e:/workspace/2020/SGreen_NREM303/") 
+# setwd("e:/workspace/2020/SGreen_NREM303/") 
 outDir <- "bcdata/"         ## subfolder to save data to 
 FileName <- "Basemap"       ## Filename prefix for basemap layers
 ForestLayers   <- "Forest"  ## Filename prefix for forestry/tenure layers 
@@ -55,9 +55,10 @@ draw <- function(xmin = -139, ymin = 49, xmax = -114, ymax = 60,
 aoi <- draw() %>% st_transform(., 3005) ## BC Albers 3005; convert to UTM 3157
 # aoi$area <- st_area(aoi) %>% units::set_units("ha")  ## calc area as hectares
 
-## * Or load aoi -------------
 
-# aoi <- st_read("LT_researchforest/proposed_researchforest.shp") %>% st_transform(., 3005)
+
+## * Or load aoi -------------
+aoi <- st_read("/home/rstudio/workRspace/2021/ALRF/Silv_Trials/Pinkerton_aoi.geojson")# %>% st_transform(., 3005)
 # aoi <- st_read("d:/GIS/ALRF/_MostRequested_/ALRF Boundary/ALRF_Boundary_BGC.gpkg") %>% 
   # st_transform(., 3005)
 # # st_is_valid(aoi)
@@ -76,14 +77,17 @@ aoi <- draw() %>% st_transform(., 3005) ## BC Albers 3005; convert to UTM 3157
 #   st_bbox(.) %>% st_as_sfc(.) ## to extent of the buffer area (no rounded corners)
 
 ## display aoi in mapview -- confirms creation / location
-aoi
-mapview(aoi)
+# aoi <- aoi[1,]
+mapview(aoi[1,])
 
 
 ## 3. Query BC data -----------------
 ## sample code for how to search the bcdata for layers
 pot <- bcdc_search("Forest Service Roads", n = 500)
 names(pot)# %>% sort()
+
+
+## * for single layers see 5. Custom Collection ----------
 
 
 ## * lists of data to get ----------
@@ -150,10 +154,12 @@ forest_dict <- c(
               "Ungulate-Winter-Range")
 
 
-custom <- c("WHSE_FOREST_TENURE.FTEN_ROAD_SECTION_LINES_SVW") ## Forest Tenure Road Section Lines
-##Note: this road layer requires an API key for download ... get via databc portal instead.            
 
-custom_dict <- c("ForestRoadsSections")
+
+
+
+
+
 
 
 ### 4. Collect & Save all the data ------------------
@@ -210,6 +216,18 @@ collect_all <- function(aoi = aoi) { ## wrapped the collection steps in a functi
 collect_all(aoi = aoi)
 
 
+### 5. Custom Collection -------------------
+### Collect specific layers 
+
+
+custom <- c("WHSE_FOREST_TENURE.FTEN_HARVEST_AUTH_POLY_SVW") ## Forest Tenure Road Section Lines
+##Note: this road layer requires an API key for download ... get via databc portal instead.            
+
+custom_dict <- c("Harvest_Pinkerton")  ## Shortname for saving the data
+
+
+
+######  Custom Collect  
 collect_custom <- function(aoi) {
   for (i in 1:length(custom)) {
     # for (i in 11:14) {
