@@ -1,0 +1,145 @@
+---
+title: "Process Raster Tiles"
+subtitle: "Mosaic and Change Resolutions"
+author: "Colin Chisholm"
+date: "10/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval=FALSE, ##generally processing is in script.
+                      warning = FALSE,
+                      message = FALSE)
+
+
+
+library(foreach)
+# devtools::install_github("ColinChisholm/pemgeneratr")
+library(pemgeneratr)
+library(rgdal)
+library(gdalUtils)
+```
+
+## Purpose
+
+Generally, working with lidar generated products a high resolution tileset of rasters (e.g. 1m resolution) is provided as a product.  This script takes those tiles resamples them to a desired resolution or set of resolutions and then generates a mosaic of the resulting tilesets.
+
+1. Take the initial tileset, usually 1m, and generate a massive mosaic
+2. Snap this resulting raster in or out to the nearest 100m -- this is to facilitate latter raster stacking. 
+3. [Optional] Generate tiles -- which can be processed faster 
+1. Takes an input raster list and outputs them to different resolutions. ... alternately just use 
+2. Create a mosaic of the rasters tiles
+
+_The continuous issue remains -- stackability of the rasters through the pem process.  Ideally, the full mosaic of the 1m raster should be generated first and the `aoi_snap()` used to trim or expand to a set number that this divisible by all of the
+
+
+### Notes:
+
+- this script assumes rasters are in a UTM based projection (i.e. in metres)
+-
+
+  ## Process tiles to alternate resolutions
+
+  ### I/O
+
+  _Adjust the following codeblock to your own situation._
+
+```{r InOutSettings}
+## Inputs -- create list of rasters to process
+rsPath <- "/home/rstudio/data/DLL/BareEarth"
+
+rs <- list.files(path = rsPath,
+                 pattern = "tif", full.names = TRUE)
+
+## Output -- folder to save rasters
+outName <- "DLL_dtm" ## will be used as the suffix for the output mosaic
+outdir <- file.path("/home/rstudio/data/DLL/BareEarth/multi_res2")
+
+## desired output resolutions
+resSet <- c(2.5, 5, 10, 25)
+```
+
+### Process the rasters
+
+Generates the rasters in various resolutions.  _Processed in parallel_.
+
+```{r AltRes-Rasters}
+## DO NOT CHANGE THIS
+cl <- parallel::makeCluster(parallel::detectCores())
+doParallel::registerDoParallel(cl)
+
+foreach(i = rs) %dopar%
+  {
+    r <- raster::raster(i)
+    pemgeneratr::multi_res(input = r, output = outdir, resolution = resSet)
+  }
+
+parallel::stopCluster(cl)
+```
+
+
+
+### Mosaic the rasters
+
+**`r length(resSet)`** sets of raster tiles have been generated.  This next step code clock cycles through each set to create a continuous cover mosaic.
+
+```{r}
+# 1m set:
+rs <- list.files(file.path("/home/rstudio/data/DLL/BareEarth/"),
+                 pattern = "tif",
+                 full.names = TRUE,
+                 recursive = FALSE
+)
+
+## ADD declare cores
+foreach (i = resSet) %do%
+  {
+    i <- "1m"  ## Testing
+
+
+    ## create output directory
+    if(!dir.exists(file.path(outdir, "mosaics"))) {
+      dir.create(file.path(outdir, "mosaics"))  }
+
+    ## get list of files
+    rs <- list.files(file.path(outdir, i),
+                     pattern = "tif", full.names = TRUE)
+
+    # 1m set: here I used this to generate a mosaic of the original 1m dataset
+    # rs <- list.files(file.path("/home/rstudio/data/DLL/BareEarth/"),
+    #              pattern = "tif",
+    #              full.names = TRUE,
+    #              recursive = FALSE
+    #              )
+
+    ## gdal mosaic fails to compile all of the tiles... if there are too many
+    ## create a set of raster-sets -- with a max of 500 each
+    # x <- seq_along(rs)
+    # rsSet <- split(rs, ceiling(x/500))
+    #
+    # ## if long list, create a tmp dir, tile each set ... then mosaic those
+    # if (length(rsSet) > 1) {dir.create(file.path(outdir, "mosaics", "tmp"))
+    #
+    #   for (j in 1:length(rsSet)) {
+    #     rs <- as.character(unlist(rsSet[j]))
+    #
+    #     mosaicOutTmp <- file.path(outdir, "mosaics", "tmp",
+    #                        paste0(outName, "_", i,"-",j, ".tif"))
+    #     gdalUtils::mosaic_rasters(rs, mosaicOutTmp)
+    #   }
+
+
+    # }
+
+
+
+    mosaicOut <- file.path(outdir, "mosaics",
+                           paste0(outName, "_", i, ".tif"))
+    gdalUtils::mosaic_rasters(rs, mosaicOut)
+  }
+
+
+```
+
+

@@ -31,7 +31,7 @@ library(bcdata)  ## tools for accessing bcdata:  http://data.gov.bc.ca
 
 ## 1. Set Parameters -------------
 
-# setwd("e:/workspace/2020/SGreen_NREM303/") 
+setwd("e:/workRspace/2021/PEM/wk1")
 outDir <- "bcdata/"         ## subfolder to save data to 
 FileName <- "Basemap"       ## Filename prefix for basemap layers
 ForestLayers   <- "Forest"  ## Filename prefix for forestry/tenure layers 
@@ -58,7 +58,7 @@ aoi <- draw() %>% st_transform(., 3005) ## BC Albers 3005; convert to UTM 3157
 
 
 ## * Or load aoi -------------
-aoi <- st_read("/home/rstudio/workRspace/2021/ALRF/Silv_Trials/Pinkerton_aoi.geojson")# %>% st_transform(., 3005)
+# aoi <- st_read("/home/rstudio/workRspace/2021/ALRF/Silv_Trials/Pinkerton_aoi.geojson")# %>% st_transform(., 3005)
 # aoi <- st_read("d:/GIS/ALRF/_MostRequested_/ALRF Boundary/ALRF_Boundary_BGC.gpkg") %>% 
   # st_transform(., 3005)
 # # st_is_valid(aoi)
@@ -220,10 +220,12 @@ collect_all(aoi = aoi)
 ### Collect specific layers 
 
 
-custom <- c("WHSE_FOREST_TENURE.FTEN_HARVEST_AUTH_POLY_SVW") ## Forest Tenure Road Section Lines
-##Note: this road layer requires an API key for download ... get via databc portal instead.            
+# custom <- c("WHSE_FOREST_TENURE.FTEN_HARVEST_AUTH_POLY_SVW") ## Forest Tenure Road Section Lines
+    ##Note: this road layer requires an API key for download ... get via databc portal instead.
+custom <- "WHSE_ADMIN_BOUNDARIES.FADM_TFL_ALL_SP" ## TFLs
 
-custom_dict <- c("Harvest_Pinkerton")  ## Shortname for saving the data
+
+custom_dict <- c("Tenure_TFL")  ## Shortname for saving the data
 
 
 
@@ -256,19 +258,24 @@ collect_custom(aoi = aoi)
 ### Appendix: Exploring data -------------
 ## Download a single layer and explore it
 ## Sample below examines RESULTS activities for chemical brushing
-i <- 5
-forest_dict[i]
-dat <- bcdc_query_geodata(forest[i], crs = 3005) %>%
-  bcdata::filter(INTERSECTS(aoi)) %>%
-  collect() %>%
-  {if(nrow(.) > 0) st_intersection(., aoi) else .}
+# i <- 5
+# forest_dict[i]
+
+q <- "WHSE_ADMIN_BOUNDARIES.FADM_TFL_ALL_SP"  ## just wanted TFL boundaries
+
+dat <- bcdc_query_geodata(q, crs = 3005) %>%
+  bcdata::filter(LICENCEE == "Dunkley Lumber Ltd") %>% 
+  # bcdata::filter(INTERSECTS(aoi)) %>%
+  collect() #%>%
+  # {if(nrow(.) > 0) st_intersection(., aoi) else .}
 
 
-brushing <- dat %>% dplyr::filter(SILV_BASE_CODE == "BR")
-recent <- brushing %>% dplyr::filter(ATU_COMPLETION_DATE >= as.Date("2010-01-01"))
-recent_chemical <- recent %>% dplyr::filter(SILV_TECHNIQUE_CODE %in% c("CG", "CA"))
+# brushing <- dat %>% dplyr::filter(SILV_BASE_CODE == "BR")
+# recent <- brushing %>% dplyr::filter(ATU_COMPLETION_DATE >= as.Date("2010-01-01"))
+# recent_chemical <- recent %>% dplyr::filter(SILV_TECHNIQUE_CODE %in% c("CG", "CA"))
 
-st_write(recent_chemical, "./bcdata/recent-chem.geojson")
+st_write(dat, "bcdata/DLL_TFL53.gpkg", "DLL TFL53")
 
-mapview(recent_chemical)
+mapview(dat)
 
+st_area(dat) %>% units::set_units(., "ha")
