@@ -5,12 +5,12 @@
 ## Version 1.1 completed July 17, 2020
 
 ## Outline ###############################
-## 1. Set up parameters 
+## 1. Set up parameters
 ## 2. Define an area of interest. Options:
 ##    - interactive via `draw()` function
 ##    - load and area of interest polygon
 ## 3. Query BCdata for layers that you want -- numerous default layers have been set up.
-## 4. Collect and Export desired data files.  
+## 4. Collect and Export desired data files.
 ##    I have set this up as a function `collect_all()`  and added `collect_custom()`
 ##    All layers, with data are saved in geojson format (other formats failed to save.)
 ## Appendix: Exploring data
@@ -18,7 +18,7 @@
 
 
 ## Load Libraries ----------------
-library(mapview) ## webmap viewer 
+library(mapview) ## webmap viewer
 library(leaflet) ## additional viewer
 library(mapedit) ## allows creation of features over webmap
 ## https://www.r-spatial.org/r/2017/01/30/mapedit_intro.html
@@ -31,12 +31,12 @@ library(bcdata)  ## tools for accessing bcdata:  http://data.gov.bc.ca
 
 ## 1. Set Parameters -------------
 
-setwd("e:/workRspace/2021/PEM/wk1")
-outDir <- "bcdata/"         ## subfolder to save data to 
+setwd("e:/workRspace/2021/tmp/wk1")
+outDir <- "bcdata/"         ## subfolder to save data to
 FileName <- "Basemap"       ## Filename prefix for basemap layers
-ForestLayers   <- "Forest"  ## Filename prefix for forestry/tenure layers 
+ForestLayers   <- "Forest"  ## Filename prefix for forestry/tenure layers
 CustomName <- "Other"            ## Filename prefix for custom layers set
-## make ourDir if needed 
+## make ourDir if needed
 if (!dir.exists(outDir)) {dir.create(outDir)}
 
 
@@ -46,7 +46,7 @@ draw <- function(xmin = -139, ymin = 49, xmax = -114, ymax = 60,
                  basemap = "GeoportailFrance.orthos") { ##Other Providers: "CartoDB.Positron", "Esri.WorldImagery", "Esri.DeLorme"
   d <- leaflet() %>%
     fitBounds(xmin, ymin,  xmax, ymax, options = list()) %>%     ## set to extent of BC
-    addProviderTiles(basemap) %>%         
+    addProviderTiles(basemap) %>%
     editMap()
   return(d$finished)
 }
@@ -59,26 +59,27 @@ aoi <- draw() %>% st_transform(., 3005) ## BC Albers 3005; convert to UTM 3157
 
 ## * Or load aoi -------------
 # aoi <- st_read("/home/rstudio/workRspace/2021/ALRF/Silv_Trials/Pinkerton_aoi.geojson")# %>% st_transform(., 3005)
-# aoi <- st_read("d:/GIS/ALRF/_MostRequested_/ALRF Boundary/ALRF_Boundary_BGC.gpkg") %>% 
-  # st_transform(., 3005)
-# # st_is_valid(aoi)
-# 
+aoi <- st_read("d:/GIS/ALRF/_MostRequested_/ALRF Boundary/ALRF_Boundary_BGC.gpkg",
+               quiet = TRUE) %>%
+  st_transform(., 3005)
+st_is_valid(aoi)
+#
 # ## sometimes shapefiles provided are invalid.  -- this attempts to repair them
 # if (!st_is_valid(aoi)) {
 #   aoi <- st_buffer(aoi,0)
 #   print("Attempting to repair invalid geometry")
 #   print(paste("Geometry is valid:", st_is_valid(aoi)))
 # }
-# 
+#
 # ## In this case I want a buffered extent of the provided shapefile
-# 
-# aoi <- st_bbox(aoi) %>% st_as_sfc(.) %>% 
-#   st_buffer(., 2000) %>% 
+#
+# aoi <- st_bbox(aoi) %>% st_as_sfc(.) %>%
+#   st_buffer(., 2000) %>%
 #   st_bbox(.) %>% st_as_sfc(.) ## to extent of the buffer area (no rounded corners)
 
 ## display aoi in mapview -- confirms creation / location
 # aoi <- aoi[1,]
-mapview(aoi[1,])
+mapview::mapview(aoi[1,])
 
 
 ## 3. Query BC data -----------------
@@ -114,7 +115,7 @@ Basemap_dict <- c("Rails",
                   "Water-Streams",
                   "Water-Wetlands")
 
-## Forest / tenure / landuse datasets 
+## Forest / tenure / landuse datasets
 forest <- c(
             # "WHSE_FOREST_VEGETATION.VEG_COMP_LAYER",  ## vri -- not downloadable via bcdata
             "results-forest-cover-reserve",
@@ -122,11 +123,11 @@ forest <- c(
             "results-forest-cover-silviculture",
             "results-openings-svw",
             "results-activity-treatment-units",
-            "bc-parks-ecological-reserves-and-protected-areas", 
+            "bc-parks-ecological-reserves-and-protected-areas",
             "forest-road-segment-tenure",
             "923c5330-c798-4276-82c1-705000c5caac",  ### Mineral Tenures
             "WHSE_MINERAL_TENURE.MTA_CROWN_GRANT_MIN_CLAIM_SVW", ## Mineral Claims
-            "tantalis-crown-tenures", ## Other uses 
+            "tantalis-crown-tenures", ## Other uses
             "WHSE_ADMIN_BOUNDARIES.FADM_TFL_ALL_SP", ## TFLs
             "WHSE_FOREST_TENURE.FTEN_MANAGED_LICENCE_POLY_SVW", ## Woodlots and Community Forests
             "WHSE_FOREST_TENURE.FTEN_SPEC_USE_PERMIT_POLY_SVW", ## SUPs
@@ -150,7 +151,7 @@ forest_dict <- c(
               "TFLs",
               "CommunityF-Woodlots",
               "SUPs",
-              "Harvest", 
+              "Harvest",
               "Ungulate-Winter-Range")
 
 
@@ -163,52 +164,52 @@ forest_dict <- c(
 
 
 ### 4. Collect & Save all the data ------------------
-collect_all <- function(aoi = aoi) { ## wrapped the collection steps in a function 
-  
+collect_all <- function(aoi = aoi) { ## wrapped the collection steps in a function
+
   st_write(aoi, dsn = paste0(outDir, FileName,"_aoi", ".geojson"),
            layer = "aoi",
            delete_dsn = TRUE)
-  
+
   ## * Collect/Save Basemap Layers --------------
   for (i in 1:length(Basemap)) {
-  
+
     # i <- 3
     print(Basemap[i])
-  
+
     ## collect the data
     dat <- bcdc_query_geodata(Basemap[i], crs = 3005) %>%
       bcdata::filter(INTERSECTS(aoi)) %>%
       collect() %>%
       {if(nrow(.) > 0) st_intersection(., aoi) else .}
-  
-    if (nrow(dat) == 0) { 
+
+    if (nrow(dat) == 0) {
       print(paste0("No ", Basemap_dict[i], " features in the area of interest."))} else{
       st_write(dat,
              dsn = paste0(outDir, FileName, "_", Basemap_dict[i], ".geojson"),
-             layer = Basemap_dict[i], 
+             layer = Basemap_dict[i],
              delete_dsn = TRUE)
       }
   }
-  
-  
+
+
   ## * Collect/Save Forest Layers ------------
   for (i in 1:length(forest)) {
   # for (i in 11:14) {
-    
+
     # i <- 11
     print(forest[i])
-    
+
     ## collect the data
     dat <- bcdc_query_geodata(forest[i], crs = 3005) %>%
       bcdata::filter(INTERSECTS(aoi)) %>%
       collect() %>%
       {if(nrow(.) > 0) st_intersection(., aoi) else .}
-    
-    if (nrow(dat) == 0) { 
+
+    if (nrow(dat) == 0) {
       print(paste0("No ", forest_dict[i], " features in the area of interest."))} else{
         st_write(dat,
                  dsn = paste0(outDir, ForestLayers, "_", forest_dict[i], ".geojson"),
-                 layer = forest_dict[i], 
+                 layer = forest_dict[i],
                  delete_dsn = TRUE)
       }
   }
@@ -217,37 +218,37 @@ collect_all(aoi = aoi)
 
 
 ### 5. Custom Collection -------------------
-### Collect specific layers 
+### Collect specific layers
 
 
 # custom <- c("WHSE_FOREST_TENURE.FTEN_HARVEST_AUTH_POLY_SVW") ## Forest Tenure Road Section Lines
     ##Note: this road layer requires an API key for download ... get via databc portal instead.
-custom <- "WHSE_ADMIN_BOUNDARIES.FADM_TFL_ALL_SP" ## TFLs
+# custom <- "WHSE_ADMIN_BOUNDARIES.FADM_TFL_ALL_SP" ## TFLs
+custom <- "WHSE_BASEMAPPING.BCGS_2500_GRID" ## Mapsheets and grids
+
+# custom_dict <- c("Tenure_TFL")  ## Shortname for saving the data
+custom_dict <- c("MapGrid_ID")  ## Shortname for saving the data
 
 
-custom_dict <- c("Tenure_TFL")  ## Shortname for saving the data
-
-
-
-######  Custom Collect  
+######  Custom Collect
 collect_custom <- function(aoi) {
   for (i in 1:length(custom)) {
     # for (i in 11:14) {
-    
+
     # i <- 11
     print(custom[i])
-    
+
     ## collect the data
     dat <- bcdc_query_geodata(custom[i], crs = 3005) %>%
       bcdata::filter(INTERSECTS(aoi)) %>%
       collect() %>%
       {if(nrow(.) > 0) st_intersection(., aoi) else .}
-    
-    if (nrow(dat) == 0) { 
+
+    if (nrow(dat) == 0) {
       print(paste0("No ", custom_dict[i], " features in the area of interest."))} else{
         st_write(dat,
                  dsn = paste0(outDir, CustomName, "_", custom_dict[i], ".geojson"),
-                 layer = custom_dict[i], 
+                 layer = custom_dict[i],
                  delete_dsn = TRUE)
       }
   }
@@ -264,7 +265,7 @@ collect_custom(aoi = aoi)
 q <- "WHSE_ADMIN_BOUNDARIES.FADM_TFL_ALL_SP"  ## just wanted TFL boundaries
 
 dat <- bcdc_query_geodata(q, crs = 3005) %>%
-  bcdata::filter(LICENCEE == "Dunkley Lumber Ltd") %>% 
+  bcdata::filter(LICENCEE == "Dunkley Lumber Ltd") %>%
   # bcdata::filter(INTERSECTS(aoi)) %>%
   collect() #%>%
   # {if(nrow(.) > 0) st_intersection(., aoi) else .}
