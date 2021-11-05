@@ -31,7 +31,8 @@ library(bcdata)  ## tools for accessing bcdata:  http://data.gov.bc.ca
 
 ## 1. Set Parameters -------------
 
-setwd("e:/workRspace/2021/tmp/wk1")
+# setwd("e:/workRspace/2021/tmp/alrf")
+setwd("~/workspace/2021/tmp")
 outDir <- "bcdata/"         ## subfolder to save data to
 FileName <- "Basemap"       ## Filename prefix for basemap layers
 ForestLayers   <- "Forest"  ## Filename prefix for forestry/tenure layers
@@ -59,9 +60,13 @@ aoi <- draw() %>% st_transform(., 3005) ## BC Albers 3005; convert to UTM 3157
 
 ## * Or load aoi -------------
 # aoi <- st_read("/home/rstudio/workRspace/2021/ALRF/Silv_Trials/Pinkerton_aoi.geojson")# %>% st_transform(., 3005)
-aoi <- st_read("d:/GIS/ALRF/_MostRequested_/ALRF Boundary/ALRF_Boundary_BGC.gpkg",
+aoi <- st_read("~/data/GIS/ALRF/_MostRequested_/ALRF Boundary/ALRF_Boundary_BGC.gpkg",
                quiet = TRUE) %>%
   st_transform(., 3005)
+
+# aoi <- st_read("d:/GIS/ALRF/_MostRequested_/ALRF Boundary/ALRF_Boundary_BGC.gpkg",
+#                quiet = TRUE) %>%
+#   st_transform(., 3005)
 st_is_valid(aoi)
 #
 # ## sometimes shapefiles provided are invalid.  -- this attempts to repair them
@@ -224,10 +229,16 @@ collect_all(aoi = aoi)
 # custom <- c("WHSE_FOREST_TENURE.FTEN_HARVEST_AUTH_POLY_SVW") ## Forest Tenure Road Section Lines
     ##Note: this road layer requires an API key for download ... get via databc portal instead.
 # custom <- "WHSE_ADMIN_BOUNDARIES.FADM_TFL_ALL_SP" ## TFLs
-custom <- "WHSE_BASEMAPPING.BCGS_2500_GRID" ## Mapsheets and grids
-
 # custom_dict <- c("Tenure_TFL")  ## Shortname for saving the data
-custom_dict <- c("MapGrid_ID")  ## Shortname for saving the data
+
+# custom <- "WHSE_BASEMAPPING.BCGS_2500_GRID" ## Mapsheets and grids
+# custom_dict <- c("MapGrid_ID")  ## Shortname for saving the data
+
+
+custom <- "2ebb35d8-c82f-4a17-9c96-612ac3532d55" ## Forest Vegetation Composite Rank 1 Layer (R1)
+custom_dict <- c("VRI")  ## Shortname for saving the data
+
+bcdc_search("vri")
 
 
 ######  Custom Collect
