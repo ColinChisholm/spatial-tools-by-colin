@@ -4,7 +4,8 @@ Spatial Tools/scripts that I created and use on a semi-regular basis
 
 ## Other tools
 
-See also tools for landscape prediction in my `pemgeneratr` package https://github.com/ColinChisholm/pemgeneratr
+~~See also tools for landscape prediction in my `pemgeneratr` package https://github.com/ColinChisholm/pemgeneratr~~
+_currently not publicly available ... but it will return_
 
 
 ## avenza waypoints report
