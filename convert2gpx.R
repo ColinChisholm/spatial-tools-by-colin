@@ -3,22 +3,31 @@
 ### initiated August 2020
 ### last edits: August 31, 2020
 
+library(dplyr)
 library(sf)
 library(rgdal)
 
 
 ## Make these first variables inputs of function to wrap all below
-input <- "d:/GIS/ALRF/Projects/2021/BlkDev/cruise/alrf_cruise_plots_52.shp"
-t <- st_read(input)
-names(t)
+input <- "d:/GIS/ALRF/Projects/2022/NW_Planning/recon_plots-2.gpkg"
+
+## fixes to data
+    t <- st_read(input)
+    t <- t %>% mutate(name = row_number())
+    names(t)
+
+    st_write(t, "d:/GIS/ALRF/Projects/2022/NW_Planning/recon_plots-2.gpkg",
+             "NW Recon Plots",
+             delete_dsn = TRUE)
+## end fixes
 
 ## input, NameField, and filename are all used in the scripting below.
 NameField <- "name"                     ##
-filename <- "alrf_cruise_plots_52b"  ## output file
+filename <- "NW_Recon_Plots"  ## output file
 
 
 
-setwd("d:/GIS/ALRF/Projects/2021/BlkDev/cruise/")
+setwd("d:/GIS/ALRF/Projects/2022/NW_Planning")
 
 
 
